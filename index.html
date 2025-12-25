@@ -52,6 +52,9 @@
       --gap-layout: 16px;
       --viewport-h: 220px;
       --viz-h: 150px;
+
+      /* ✅ FIX: ใช้ความสูงจริงของมือถือ (JS จะ set เป็น px) */
+      --app-h: 100dvh;
     }
 
     * {
@@ -60,7 +63,6 @@
       outline: none;
     }
 
-    /* ✅ ใช้ dvh กันปัญหา address bar บนมือถือ */
     body {
       background: #020617;
       color: var(--text-main);
@@ -68,7 +70,7 @@
       margin: 0;
 
       width: 100vw;
-      height: 100dvh;
+      height: var(--app-h);
 
       display: flex;
       align-items: center;
@@ -77,13 +79,26 @@
       overflow: hidden;
     }
 
+    /* ✅ Screen flash fallback (สำหรับ iOS/เครื่องที่ไม่รองรับ torch) */
+    body::after{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.85);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 120ms ease;
+      z-index: 9999;
+    }
+    body.screen-flash::after{ opacity: 1; }
+
     /* --- App Frame Wrapper --- */
     .app-frame {
       width: calc(100vw - (var(--frame-gap) * 2));
-      height: calc(100dvh - (var(--frame-gap) * 2));
+      height: calc(var(--app-h) - (var(--frame-gap) * 2));
 
       max-width: 500px;
-      max-height: calc(100dvh - (var(--frame-gap) * 2));
+      max-height: calc(var(--app-h) - (var(--frame-gap) * 2));
 
       background: var(--bg-body);
       display: flex;
@@ -121,9 +136,7 @@
       gap: 10px;
       color: #fff;
     }
-    .brand i {
-      color: var(--primary);
-    }
+    .brand i { color: var(--primary); }
     .brand span {
       color: var(--primary);
       font-weight: 400;
@@ -167,7 +180,7 @@
     /* --- Viewport (Auto-fit) --- */
     .viewport {
       height: var(--viewport-h);
-      min-height: 0; /* ✅ กันดันจนล้น */
+      min-height: 0;
       display: flex;
       background: #020617;
       border-bottom: 1px solid var(--border-subtle);
@@ -198,7 +211,7 @@
       display: flex;
       flex-direction: column;
       padding: 16px;
-      overflow-y: auto; /* อันนี้ยังเลื่อนได้ (เฉพาะฝั่ง AI) */
+      overflow-y: auto;
       flex-shrink: 0;
       box-shadow: inset 5px 0 15px rgba(0, 0, 0, 0.2);
     }
@@ -227,9 +240,7 @@
       border: 2px solid rgba(255, 255, 255, 0.9);
       border-radius: 18px;
     }
-    .target-box.flash {
-      transform: scale(0.95);
-    }
+    .target-box.flash { transform: scale(0.95); }
     .target-box.flash::before {
       border-color: var(--primary);
       box-shadow: 0 0 25px var(--primary);
@@ -297,14 +308,8 @@
     }
 
     @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
+      from { opacity: 0; transform: translateX(10px); }
+      to { opacity: 1; transform: translateX(0); }
     }
 
     /* --- Panel (ไม่ให้ scroll) --- */
@@ -314,10 +319,10 @@
       display: flex;
       flex-direction: column;
 
-      overflow: hidden; /* ✅ ปิด scrollbar ของ panel */
+      overflow: hidden;
       padding-top: var(--gap-layout);
       padding-bottom: var(--gap-layout);
-      min-height: 0; /* ✅ สำคัญกับ flex */
+      min-height: 0;
     }
 
     .panel-content {
@@ -330,8 +335,8 @@
       width: 100%;
       height: 100%;
 
-      overflow: hidden; /* ✅ ปิด scrollbar ของ panel-content */
-      min-height: 0; /* ✅ สำคัญกับ flex */
+      overflow: hidden;
+      min-height: 0;
     }
 
     /* Result Dashboard */
@@ -348,11 +353,7 @@
       flex-shrink: 0;
     }
 
-    .res-left {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
+    .res-left { display: flex; flex-direction: column; gap: 2px; }
     .res-label {
       font-size: 0.65rem;
       color: var(--text-muted);
@@ -714,14 +715,42 @@
     let bgImageData = null;
     let deltaMode = "2000";
 
+    // ✅ Torch/Flash
+    let videoTrack = null;
+    let torchSupported = false;
+    let isTorchBusy = false;
+
+    // ✅ FIX: ความสูงจริงของ viewport บนมือถือ (แก้ปัญหาส่วนท้ายโดนตัด)
+    function setRealAppHeight() {
+      const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty("--app-h", `${Math.round(h)}px`);
+      if (typeof applyAutoFitLayout === "function") requestAnimationFrame(applyAutoFitLayout);
+    }
+    setRealAppHeight();
+    window.addEventListener("resize", setRealAppHeight);
+    window.addEventListener("orientationchange", setRealAppHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", setRealAppHeight);
+      window.visualViewport.addEventListener("scroll", setRealAppHeight);
+    }
+
     async function initCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 640 } },
         });
         video.srcObject = stream;
+
+        // ✅ เก็บ track + เช็ค torch
+        videoTrack = stream.getVideoTracks?.()[0] || null;
+        try {
+          const caps = videoTrack?.getCapabilities?.();
+          torchSupported = !!caps?.torch;
+        } catch (e) {
+          torchSupported = false;
+        }
+
         video.onloadedmetadata = () => {
-          // ✅ ให้ขนาดกราฟตรงกับ layout ปัจจุบัน
           resizeGraph();
           window.addEventListener("resize", resizeGraph);
           isProcessing = true;
@@ -748,32 +777,23 @@
       const header = document.querySelector("header");
       if (!frame || !header) return;
 
-      const H = frame.clientHeight;
+      // ✅ FIX: ใช้ bounding rect (นิ่งกว่าบนมือถือ)
+      const H = frame.getBoundingClientRect().height;
       const headerH = header.offsetHeight;
 
-      // พื้นที่รวมหลังหัก header
       const remain = Math.max(0, H - headerH);
 
-      // viewport: ปรับตามสัดส่วน + จำกัด min/max เพื่อกันล้น/กันเล็กเกิน
-      const viewportH = Math.max(150, Math.min(270, Math.round(remain * 0.36)));
-
-      // panel ที่เหลือ
+      // ✅ ปรับให้ยืดหยุ่นขึ้นเล็กน้อย กันท้ายโดนบีบ
+      const viewportH = Math.max(140, Math.min(270, Math.round(remain * 0.34)));
       const panelRemain = Math.max(0, remain - viewportH);
-
-      // viz-section: ปรับตามพื้นที่ panel
-      const vizH = Math.max(105, Math.min(175, Math.round(panelRemain * 0.26)));
-
-      // gap: หด/ขยายให้พอดีจอ
+      const vizH = Math.max(90, Math.min(175, Math.round(panelRemain * 0.24)));
       const gap = Math.max(10, Math.min(18, Math.round(panelRemain * 0.06)));
 
       document.documentElement.style.setProperty("--viewport-h", viewportH + "px");
       document.documentElement.style.setProperty("--viz-h", vizH + "px");
       document.documentElement.style.setProperty("--gap-layout", gap + "px");
 
-      // รีไซส์กราฟตาม layout ใหม่
-      if (typeof resizeGraph === "function") {
-        requestAnimationFrame(resizeGraph);
-      }
+      if (typeof resizeGraph === "function") requestAnimationFrame(resizeGraph);
     }
 
     // --- COLOR WHEEL GRADIENT LOGIC (Using HSL) ---
@@ -852,22 +872,87 @@
       requestAnimationFrame(loop);
     }
 
-    function lockRef() {
-      if (!liveLab) return;
-      savedRefLab = { ...liveLab };
-      updateCard("ref", savedRefLab, liveRGB);
+    function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+    async function setTorch(on) {
+      if (!videoTrack || !torchSupported || !videoTrack.applyConstraints) return false;
+      try {
+        await videoTrack.applyConstraints({ advanced: [{ torch: !!on }] });
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function readOneSample() {
+      if (video.readyState !== video.HAVE_ENOUGH_DATA) return null;
+
+      procCtx.drawImage(video, 0, 0, 50, 50);
+      const frame = procCtx.getImageData(23, 23, 4, 4);
+      const data = frame.data;
+
+      let r = 0, g = 0, b = 0, c = 0;
+      for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; c++; }
+      r = Math.round(r / c); g = Math.round(g / c); b = Math.round(b / c);
+
+      const rgb = `rgb(${r},${g},${b})`;
+      const lab = rgbToLab(r, g, b);
+
+      liveRGB = rgb;
+      liveLab = lab;
+
+      return { rgb, lab };
+    }
+
+    async function captureWithFlash(settleMs = 180) {
+      if (isTorchBusy) return null;
+      isTorchBusy = true;
+
+      let usedTorch = false;
+      let usedScreen = false;
+
+      try {
+        usedTorch = await setTorch(true);
+        if (!usedTorch) {
+          document.body.classList.add("screen-flash");
+          usedScreen = true;
+        }
+
+        await wait(settleMs);
+
+        const sample = readOneSample();
+        return sample;
+      } finally {
+        if (usedTorch) await setTorch(false);
+        if (usedScreen) document.body.classList.remove("screen-flash");
+        isTorchBusy = false;
+      }
+    }
+
+    async function lockRef() {
+      const sample = await captureWithFlash();
+      if (!sample) return;
+
+      savedRefLab = { ...sample.lab };
+      updateCard("ref", savedRefLab, sample.rgb);
+
       document.getElementById("card-ref").classList.add("active-ref");
       document.getElementById("btn-lock-ref").innerHTML = '<i data-lucide="check"></i> SAVED';
+
       flashTarget();
       tryCalculate();
       lucide.createIcons();
     }
 
-    function lockSam() {
-      if (!liveLab) return;
-      savedSamLab = { ...liveLab };
-      updateCard("sam", savedSamLab, liveRGB);
+    async function lockSam() {
+      const sample = await captureWithFlash();
+      if (!sample) return;
+
+      savedSamLab = { ...sample.lab };
+      updateCard("sam", savedSamLab, sample.rgb);
+
       document.getElementById("card-sam").classList.add("active-sam");
+
       flashTarget();
       tryCalculate();
     }
@@ -963,8 +1048,10 @@
         document.getElementById(`${type}-b`).innerText = "-";
         document.getElementById(`marker-${type}`).classList.remove("visible");
       });
+
       document.getElementById("btn-lock-ref").innerHTML =
         '<i data-lucide="fingerprint" style="width:16px;"></i> LOCK REF';
+
       document.getElementById("delta-val").innerText = "--";
       document.getElementById("result-dashboard").className = "result-dashboard";
       document.getElementById("delta-msg").innerText = "READY";
@@ -1093,6 +1180,7 @@
     /* ✅ เรียก Auto-fit ตั้งแต่เริ่ม + ตอนหมุนจอ/เปลี่ยนขนาด */
     applyAutoFitLayout();
     window.addEventListener("resize", applyAutoFitLayout);
+
     const frameEl = document.querySelector(".app-frame");
     if (frameEl && "ResizeObserver" in window) {
       new ResizeObserver(() => applyAutoFitLayout()).observe(frameEl);
