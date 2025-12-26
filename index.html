@@ -24,7 +24,6 @@
 
   <style>
     :root {
-      /* --- INDIGO / NAVY / WHITE PALETTE --- */
       --bg-body: #0f172a;
       --bg-card: #1e293b;
       --bg-sidebar: #172554;
@@ -45,25 +44,20 @@
       --font-ui: "Inter", sans-serif;
       --font-num: "JetBrains Mono", monospace;
 
-      /* ✅ ปรับตามขนาดจออัตโนมัติ */
+      /* responsive margins */
       --frame-gap: clamp(18px, 6.5vw, 72px);
 
-      /* ✅ ค่าเริ่มต้น (JS จะ auto-fit ให้เอง) */
+      /* JS auto-fit */
       --gap-layout: 16px;
       --viewport-h: 220px;
       --viz-h: 150px;
 
-      /* ✅ ใช้ความสูงจริงของมือถือ (JS จะ set เป็น px) */
+      /* real mobile viewport height (JS sets px) */
       --app-h: 100dvh;
     }
 
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      outline: none;
-    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
 
-    /* ✅ FIX: กันล้นจอโดยให้ body เป็นตัวเว้นขอบ + app-frame สูง 100% */
     body {
       background: #020617;
       color: var(--text-main);
@@ -71,18 +65,16 @@
       margin: 0;
 
       width: 100vw;
-      min-height: 100svh;
       height: var(--app-h);
 
       display: flex;
       align-items: center;
       justify-content: center;
 
-      padding: var(--frame-gap);
       overflow: hidden;
     }
 
-    /* ✅ Screen flash fallback */
+    /* Screen flash fallback */
     body::after{
       content:"";
       position: fixed;
@@ -94,15 +86,13 @@
       z-index: 9999;
     }
     body.screen-flash::after{ opacity: 1; }
-
-    /* ✅ Screen lamp fallback (เปิดค้าง) */
     body.screen-lamp::after{ opacity: 1; }
 
-    /* --- App Frame Wrapper --- */
     .app-frame {
-      width: min(500px, 100%);
-      height: 100%;
-      max-height: 100%;
+      width: calc(100vw - (var(--frame-gap) * 2));
+      height: calc(var(--app-h) - (var(--frame-gap) * 2));
+      max-width: 500px;
+      max-height: calc(var(--app-h) - (var(--frame-gap) * 2));
 
       background: var(--bg-body);
       display: flex;
@@ -117,7 +107,6 @@
       padding-bottom: env(safe-area-inset-bottom);
     }
 
-    /* --- Header --- */
     header {
       min-height: 64px;
       padding: 0 20px;
@@ -140,18 +129,9 @@
       color: #fff;
     }
     .brand i { color: var(--primary); }
-    .brand span {
-      color: var(--primary);
-      font-weight: 400;
-      opacity: 0.9;
-      font-size: 0.8em;
-    }
+    .brand span { color: var(--primary); font-weight: 400; opacity: 0.9; font-size: 0.8em; }
 
-    .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .header-controls { display: flex; align-items: center; gap: 10px; }
 
     .algo-selector {
       appearance: none;
@@ -178,11 +158,11 @@
       justify-content: center;
       cursor: pointer;
       transition: 0.2s;
-      flex-shrink: 0;
     }
-    .btn-icon-header:active { transform: scale(0.96); }
 
-    /* --- Viewport (Auto-fit) --- */
+    .dash-right { display:flex; align-items:center; gap:10px; flex-shrink: 0; }
+    .btn-icon-dash { width: 38px; height: 38px; }
+
     .viewport {
       height: var(--viewport-h);
       min-height: 0;
@@ -192,7 +172,6 @@
       flex-shrink: 0;
     }
 
-    /* Left: Camera (50%) */
     .vp-camera {
       flex: 1;
       position: relative;
@@ -201,15 +180,10 @@
       align-items: center;
       justify-content: center;
       border-right: 1px solid var(--border-subtle);
+      background: #020617;
     }
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.9;
-    }
+    video { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
 
-    /* Right: AI Sidebar (50%) */
     .vp-advice {
       flex: 1;
       background: var(--bg-sidebar);
@@ -228,6 +202,7 @@
       align-items: center;
       justify-content: center;
       pointer-events: none;
+      z-index: 10;
     }
 
     .target-box {
@@ -246,26 +221,10 @@
       border-radius: 18px;
     }
     .target-box.flash { transform: scale(0.95); }
-    .target-box.flash::before {
-      border-color: var(--primary);
-      box-shadow: 0 0 25px var(--primary);
-    }
+    .target-box.flash::before { border-color: var(--primary); box-shadow: 0 0 25px var(--primary); }
 
-    .crosshair {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0.8;
-    }
-    .ch-c {
-      width: 4px;
-      height: 4px;
-      background: #fff;
-      border-radius: 50%;
-      box-shadow: 0 0 2px #000;
-    }
+    .crosshair { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0.8; }
+    .ch-c { width: 4px; height: 4px; background: #fff; border-radius: 50%; box-shadow: 0 0 2px #000; }
 
     .vp-header {
       font-size: 0.7rem;
@@ -295,18 +254,15 @@
       color: #fff;
       margin-bottom: 4px;
     }
-    .adv-detail {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      margin-left: 2px;
-    }
+    .adv-detail { font-size: 0.7rem; color: var(--text-muted); margin-left: 2px; }
+
     .placeholder-state {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100%;
-      opacity: 0.4;
+      opacity: 0.35;
       text-align: center;
       gap: 10px;
       color: #94a3b8;
@@ -317,7 +273,6 @@
       to { opacity: 1; transform: translateX(0); }
     }
 
-    /* --- Panel --- */
     .panel {
       flex: 1;
       background: var(--bg-body);
@@ -334,14 +289,15 @@
       display: flex;
       flex-direction: column;
       gap: var(--gap-layout);
+
       margin: 0 auto;
       width: 100%;
       height: 100%;
+
       overflow: hidden;
       min-height: 0;
     }
 
-    /* Result Dashboard */
     .result-dashboard {
       display: flex;
       gap: 12px;
@@ -382,13 +338,6 @@
       flex-shrink: 0;
     }
 
-    .dash-right{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-shrink: 0;
-    }
-
     .status-match .res-value { color: var(--success); }
     .status-match .res-badge { background: rgba(52, 211, 153, 0.2); color: var(--success); border-color: rgba(52, 211, 153, 0.3); }
     .status-close .res-value { color: var(--warn); }
@@ -396,7 +345,6 @@
     .status-diff .res-value { color: var(--danger); }
     .status-diff .res-badge { background: rgba(248, 113, 113, 0.2); color: var(--danger); border-color: rgba(248, 113, 113, 0.3); }
 
-    /* Cards */
     .cards-container {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -416,12 +364,7 @@
       min-width: 0;
     }
 
-    .card-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
+    .card-top { display: flex; justify-content: space-between; align-items: center; }
     .card-title {
       font-size: 0.75rem;
       font-weight: 800;
@@ -450,20 +393,10 @@
       border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .l-item {
-      flex: 1;
-      text-align: center;
-      border-right: 1px solid rgba(255, 255, 255, 0.1);
-      min-width: 0;
-    }
+    .l-item { flex: 1; text-align: center; border-right: 1px solid rgba(255, 255, 255, 0.1); min-width: 0; }
     .l-item:last-child { border: none; }
 
-    .l-lbl {
-      font-size: 0.55rem;
-      color: #64748b;
-      font-weight: 700;
-      margin-bottom: 2px;
-    }
+    .l-lbl { font-size: 0.55rem; color: #64748b; font-weight: 700; margin-bottom: 2px; }
     .l-val {
       font-family: var(--font-num);
       font-size: 0.9rem;
@@ -501,7 +434,6 @@
     .data-card.active-sam .card-title { color: #fff; }
     .data-card.active-sam .btn-act { background: #fff; color: #0f172a; box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2); }
 
-    /* Viz Section (Auto-fit) */
     .viz-section {
       display: flex;
       gap: 12px;
@@ -600,6 +532,109 @@
 
     canvas { display: block; }
     #proc-canvas { display: none; }
+
+    /* =======================================================
+       ✅ Visual Guidance HUD (Rings) — SMALL + TOP-LEFT
+       ======================================================= */
+    .guidance-hud{
+      position:absolute;
+      top: calc(10px + env(safe-area-inset-top));
+      left: calc(10px + env(safe-area-inset-left));
+      right: auto;
+      z-index: 25;
+      pointer-events: none;
+
+      display:flex;
+      justify-content: flex-start;
+      gap: 8px;
+      flex-wrap: nowrap;
+      align-items: center;
+
+      padding: 6px 8px;
+      border-radius: 14px;
+      background: rgba(2,6,23,.28);
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.18);
+
+      width: fit-content;
+      max-width: calc(100% - 20px);
+    }
+
+    .guidance-hud.hidden{
+      opacity: 0;
+      transform: translateY(-6px);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .guidance-hud:not(.hidden){
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .gauge{
+      width: 54px;
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      gap: 4px;
+    }
+
+    .g-lbl{
+      font-family: var(--font-num);
+      font-size: .52rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      color: rgba(255,255,255,.78);
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .g-circle{
+      --p: 0;
+      --c: rgba(251,191,36,.95);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      position: relative;
+
+      background: conic-gradient(
+        var(--c) calc(var(--p) * 1%),
+        rgba(255,255,255,.10) 0
+      );
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .g-circle::after{
+      content:"";
+      position:absolute;
+      inset: 3px;
+      border-radius: 50%;
+      background: rgba(2,6,23,.55);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+    }
+
+    .g-circle i{
+      position: relative;
+      z-index: 2;
+      width: 14px !important;
+      height: 14px !important;
+      color: rgba(255,255,255,.92);
+    }
+
+    .g-good .g-circle{ --c: rgba(52,211,153,.95); }
+    .g-mid  .g-circle{ --c: rgba(251,191,36,.95); }
+    .g-bad  .g-circle{ --c: rgba(248,113,113,.95); }
+
+    .g-na .g-circle{
+      --p: 0;
+      background: radial-gradient(circle at center, rgba(255,255,255,.10), rgba(255,255,255,.06));
+    }
+    .g-na .g-lbl{ opacity: .55; }
   </style>
 </head>
 
@@ -614,7 +649,6 @@
           <option value="76">DE 76</option>
         </select>
 
-        <!-- Torch hold -->
         <button class="btn-icon-header" id="btn-torch" onclick="toggleTorchHold()" title="Torch">
           <i data-lucide="flashlight" style="width: 18px;"></i>
         </button>
@@ -624,6 +658,31 @@
     <div class="viewport">
       <div class="vp-camera">
         <video id="webcam" autoplay playsinline muted></video>
+
+        <!-- ✅ Small guidance HUD at top-left -->
+        <div id="guidanceHud" class="guidance-hud hidden" aria-label="Capture guidance">
+          <div class="gauge" id="gDistGauge" title="Distance / Focus">
+            <div class="g-circle" id="gDistCircle">
+              <i data-lucide="ruler"></i>
+            </div>
+            <div class="g-lbl">DIST</div>
+          </div>
+
+          <div class="gauge" id="gAngleGauge" title="Angle / Tilt">
+            <div class="g-circle" id="gAngleCircle">
+              <i data-lucide="rotate-3d"></i>
+            </div>
+            <div class="g-lbl">ANGLE</div>
+          </div>
+
+          <div class="gauge" id="gGlareGauge" title="Glare / Reflection">
+            <div class="g-circle" id="gGlareCircle">
+              <i data-lucide="sun"></i>
+            </div>
+            <div class="g-lbl">GLARE</div>
+          </div>
+        </div>
+
         <div class="hud-overlay">
           <div id="target-box" class="target-box">
             <div class="crosshair"><div class="ch-c"></div></div>
@@ -634,9 +693,10 @@
       <div class="vp-advice">
         <div class="vp-header"><i data-lucide="bot" style="width: 14px;"></i> AI ASSIST</div>
         <div id="advice-content"></div>
+
+        <!-- ✅ no hint text -->
         <div id="advice-placeholder" class="placeholder-state">
-          <i data-lucide="scan" style="width: 28px; opacity: 0.5;"></i>
-          <span style="font-size: 0.65rem;">Lock both<br />Ref & Sample</span>
+          <i data-lucide="scan" style="width: 28px; opacity: 0.55;"></i>
         </div>
       </div>
     </div>
@@ -651,7 +711,7 @@
 
           <div class="dash-right">
             <div class="res-badge" id="delta-msg">READY</div>
-            <button class="btn-icon-header" onclick="resetAll()" title="Reset">
+            <button class="btn-icon-header btn-icon-dash" onclick="resetAll()" title="Reset">
               <i data-lucide="rotate-cw" style="width: 18px;"></i>
             </button>
           </div>
@@ -721,9 +781,9 @@
 
     const video = document.getElementById("webcam");
     const procCanvas = document.getElementById("proc-canvas");
-    const procCtx = procCanvas.getContext("2d");
+    const procCtx = procCanvas.getContext("2d", { willReadFrequently: true });
     const plotCanvas = document.getElementById("ab-plot");
-    const plotCtx = plotCanvas.getContext("2d");
+    const plotCtx = plotCanvas.getContext("2d", { willReadFrequently: true });
 
     let isProcessing = false;
     let liveLab = null;
@@ -732,21 +792,29 @@
     let bgImageData = null;
     let deltaMode = "2000";
 
-    // ✅ Torch / Flash
+    // Torch
     let videoTrack = null;
     let torchSupported = false;
     let isTorchBusy = false;
     let isTorchOn = false;
 
-    // ✅ Android fallback: ImageCapture
-    let imageCapture = null;
+    // Orientation (Angle)
+    let lastOri = { beta: null, gamma: null, alpha: null };
 
-    // ✅ ROI settings (4x4 -> 12x12)
-    const ROI_SIZE = 12; // ✅ เปลี่ยนเป็น 12
-    const ROI_CENTER = { x: 25, y: 25 }; // กลางของ 50x50
-    const ROI_HALF = Math.floor(ROI_SIZE / 2);
+    // Guidance reference metrics
+    let refMetrics = null;  // { meanLuma, sharpness, overPct, beta, gamma }
+    let liveMetrics = null;
 
-    // ✅ FIX: ความสูงจริงของ viewport บนมือถือ
+    // Guidance HUD Elements
+    const guidanceHud = document.getElementById("guidanceHud");
+    const gDistGauge  = document.getElementById("gDistGauge");
+    const gAngleGauge = document.getElementById("gAngleGauge");
+    const gGlareGauge = document.getElementById("gGlareGauge");
+    const gDistCircle  = document.getElementById("gDistCircle");
+    const gAngleCircle = document.getElementById("gAngleCircle");
+    const gGlareCircle = document.getElementById("gGlareCircle");
+
+    // Real app height (mobile browser bars)
     function setRealAppHeight() {
       const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       document.documentElement.style.setProperty("--app-h", `${Math.round(h)}px`);
@@ -760,6 +828,30 @@
       window.visualViewport.addEventListener("scroll", setRealAppHeight);
     }
 
+    function attachOrientationListener() {
+      if (!("DeviceOrientationEvent" in window)) return;
+      window.addEventListener("deviceorientation", (e) => {
+        lastOri = {
+          alpha: typeof e.alpha === "number" ? e.alpha : null,
+          beta: typeof e.beta === "number" ? e.beta : null,
+          gamma: typeof e.gamma === "number" ? e.gamma : null
+        };
+      }, { passive: true });
+    }
+    attachOrientationListener();
+
+    async function requestOrientationPermissionIfNeeded() {
+      try {
+        if (typeof DeviceOrientationEvent?.requestPermission === "function") {
+          const state = await DeviceOrientationEvent.requestPermission();
+          return state === "granted";
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
     async function initCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -768,24 +860,12 @@
         video.srcObject = stream;
 
         videoTrack = stream.getVideoTracks?.()[0] || null;
-
-        // ✅ ImageCapture fallback
-        try {
-          if ("ImageCapture" in window && videoTrack) {
-            imageCapture = new ImageCapture(videoTrack);
-          }
-        } catch (e) {
-          imageCapture = null;
-        }
-
-        // ✅ torch support check
         try {
           const caps = videoTrack?.getCapabilities?.();
           torchSupported = !!caps?.torch;
         } catch (e) {
           torchSupported = false;
         }
-        if (!torchSupported && imageCapture) torchSupported = true;
 
         updateTorchUI();
 
@@ -810,7 +890,7 @@
       }
     }
 
-    // --- AUTO-FIT LAYOUT ---
+    // Auto-fit layout
     function applyAutoFitLayout() {
       const frame = document.querySelector(".app-frame");
       const header = document.querySelector("header");
@@ -820,7 +900,6 @@
       const headerH = header.offsetHeight;
 
       const remain = Math.max(0, H - headerH);
-
       const viewportH = Math.max(140, Math.min(270, Math.round(remain * 0.34)));
       const panelRemain = Math.max(0, remain - viewportH);
       const vizH = Math.max(90, Math.min(175, Math.round(panelRemain * 0.24)));
@@ -830,10 +909,10 @@
       document.documentElement.style.setProperty("--viz-h", vizH + "px");
       document.documentElement.style.setProperty("--gap-layout", gap + "px");
 
-      if (typeof resizeGraph === "function") requestAnimationFrame(resizeGraph);
+      requestAnimationFrame(resizeGraph);
     }
 
-    // --- COLOR MAP ---
+    // Color wheel gradient
     function renderColorMap() {
       const w = plotCanvas.width, h = plotCanvas.height;
       const cx = w / 2, cy = h / 2;
@@ -892,56 +971,146 @@
       return { r: Math.round(255 * f(0)), g: Math.round(255 * f(8)), b: Math.round(255 * f(4)) };
     }
 
+    // Guidance metrics
+    function computeRegionMetrics(imgData, w, h) {
+      const d = imgData.data;
+      let sumL = 0, over = 0, n = 0;
+      let sharp = 0;
+
+      const lumaAt = (i) => (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]);
+      const lum = new Float32Array(w * h);
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4;
+          const L = lumaAt(idx);
+          lum[y * w + x] = L;
+          sumL += L; n++;
+          if (d[idx] >= 245 && d[idx + 1] >= 245 && d[idx + 2] >= 245) over++;
+        }
+      }
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const here = lum[y * w + x];
+          if (x + 1 < w) sharp += Math.abs(here - lum[y * w + (x + 1)]);
+          if (y + 1 < h) sharp += Math.abs(here - lum[(y + 1) * w + x]);
+        }
+      }
+
+      return { meanLuma: sumL / Math.max(1, n), sharpness: sharp, overPct: over / Math.max(1, n) };
+    }
+
+    function readLiveQuality() {
+      if (video.readyState !== video.HAVE_ENOUGH_DATA) return null;
+
+      procCtx.drawImage(video, 0, 0, 50, 50);
+      const rx = 14, ry = 14, rw = 22, rh = 22;
+      const region = procCtx.getImageData(rx, ry, rw, rh);
+      const m = computeRegionMetrics(region, rw, rh);
+
+      return { ...m, beta: lastOri?.beta ?? null, gamma: lastOri?.gamma ?? null };
+    }
+
+    const clamp01 = (x) => Math.max(0, Math.min(1, x));
+
+    function showGuidance(visible) {
+      if (!guidanceHud) return;
+      guidanceHud.classList.toggle("hidden", !visible);
+    }
+
+    function setGaugeState(gaugeEl, circleEl, score01, stateClass) {
+      if (!gaugeEl || !circleEl) return;
+      gaugeEl.classList.remove("g-good", "g-mid", "g-bad", "g-na");
+      if (stateClass) gaugeEl.classList.add(stateClass);
+
+      const p = Math.round(Math.max(0, Math.min(1, score01)) * 100);
+      circleEl.style.setProperty("--p", p);
+    }
+
+    function updateGuidanceHud(ref, cur) {
+      if (!ref || !cur) { showGuidance(false); return; }
+      showGuidance(true);
+
+      // ANGLE score
+      let tiltDiff = null;
+      if (typeof ref.beta === "number" && typeof ref.gamma === "number" &&
+          typeof cur.beta === "number" && typeof cur.gamma === "number") {
+        const db = Math.abs(cur.beta - ref.beta);
+        const dg = Math.abs(cur.gamma - ref.gamma);
+        tiltDiff = Math.max(db, dg);
+      }
+      const angleScore = (tiltDiff == null) ? null : (1 - clamp01(tiltDiff / 18));
+
+      // DIST score (sharpness + luma proxy)
+      let distScore = 0.65;
+      if ((ref.sharpness ?? 0) > 0 && (cur.sharpness ?? 0) > 0) {
+        const ratio = cur.sharpness / ref.sharpness; // ~1 best
+        const logErr = Math.abs(Math.log(ratio));
+        const LOG_MAX = Math.log(1.8);
+        const sharpScore = 1 - clamp01(logErr / LOG_MAX);
+
+        const lumaDiff = Math.abs((cur.meanLuma ?? 0) - (ref.meanLuma ?? 0));
+        const LUMA_MAX = 18;
+        const lumaScore = 1 - clamp01(lumaDiff / LUMA_MAX);
+
+        distScore = 0.65 * sharpScore + 0.35 * lumaScore;
+      }
+
+      // GLARE score
+      const GLARE_MAX = 0.10;
+      const glareScore = 1 - clamp01((cur.overPct ?? 0) / GLARE_MAX);
+
+      const stateFrom = (s) => (s > 0.90 ? "g-good" : (s > 0.78 ? "g-mid" : "g-bad"));
+
+      setGaugeState(gDistGauge,  gDistCircle,  distScore,  stateFrom(distScore));
+      setGaugeState(gGlareGauge, gGlareCircle, glareScore, stateFrom(glareScore));
+
+      if (angleScore == null) {
+        gAngleGauge.classList.remove("g-good","g-mid","g-bad");
+        gAngleGauge.classList.add("g-na");
+        gAngleCircle.style.setProperty("--p", 0);
+      } else {
+        setGaugeState(gAngleGauge, gAngleCircle, angleScore, stateFrom(angleScore));
+      }
+    }
+
+    // Main loop
     function loop() {
       if (!isProcessing) return;
 
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
         procCtx.drawImage(video, 0, 0, 50, 50);
-
-        // realtime preview: ใช้ ROI 12x12
-        const x0 = ROI_CENTER.x - ROI_HALF;
-        const y0 = ROI_CENTER.y - ROI_HALF;
-        const frame = procCtx.getImageData(x0, y0, ROI_SIZE, ROI_SIZE);
+        const frame = procCtx.getImageData(23, 23, 4, 4);
         const data = frame.data;
 
         let r = 0, g = 0, b = 0, c = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          r += data[i]; g += data[i + 1]; b += data[i + 2]; c++;
-        }
+        for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; c++; }
         r = Math.round(r / c); g = Math.round(g / c); b = Math.round(b / c);
 
         liveRGB = `rgb(${r},${g},${b})`;
         liveLab = rgbToLab(r, g, b);
+
         drawABGraph();
+
+        liveMetrics = readLiveQuality();
+        if (refMetrics && liveMetrics) updateGuidanceHud(refMetrics, liveMetrics);
+        else showGuidance(false);
       }
+
       requestAnimationFrame(loop);
     }
 
     function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-    // ✅ Torch open: applyConstraints -> ImageCapture.setOptions -> false
     async function setTorch(on) {
-      if (!videoTrack) return false;
-
-      // 1) applyConstraints
+      if (!videoTrack || !torchSupported || !videoTrack.applyConstraints) return false;
       try {
-        const caps = videoTrack.getCapabilities?.();
-        const canTorch = !!caps?.torch;
-        if (canTorch && videoTrack.applyConstraints) {
-          await videoTrack.applyConstraints({ advanced: [{ torch: !!on }] });
-          return true;
-        }
-      } catch (e) {}
-
-      // 2) ImageCapture fallback
-      try {
-        if (imageCapture?.setOptions) {
-          await imageCapture.setOptions({ torch: !!on });
-          return true;
-        }
-      } catch (e) {}
-
-      return false;
+        await videoTrack.applyConstraints({ advanced: [{ torch: !!on }] });
+        return true;
+      } catch (e) {
+        return false;
+      }
     }
 
     function updateTorchUI() {
@@ -965,10 +1134,8 @@
       const next = !isTorchOn;
 
       try {
-        if (torchSupported) {
+        if (torchSupported && videoTrack?.applyConstraints) {
           const ok = await setTorch(next);
-
-          // fallback to screen lamp
           if (!ok && next) {
             document.body.classList.add("screen-lamp");
             isTorchOn = true;
@@ -982,7 +1149,6 @@
           return;
         }
 
-        // not supported: screen lamp
         isTorchOn = next;
         document.body.classList.toggle("screen-lamp", isTorchOn);
         updateTorchUI();
@@ -991,51 +1157,15 @@
       }
     }
 
-    // -------- Robust stats helpers (Trimmed mean / Median) --------
-    function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
-
-    function medianOfSorted(arrSorted) {
-      const n = arrSorted.length;
-      if (n === 0) return null;
-      const mid = Math.floor(n / 2);
-      return (n % 2 === 1) ? arrSorted[mid] : (arrSorted[mid - 1] + arrSorted[mid]) / 2;
-    }
-
-    function trimmedMean(arr, trim = 1) {
-      if (!arr || arr.length === 0) return null;
-      const a = [...arr].sort((x, y) => x - y);
-      const t = clamp(trim, 0, Math.floor((a.length - 1) / 2));
-      const sliced = a.slice(t, a.length - t);
-      const sum = sliced.reduce((s, v) => s + v, 0);
-      return sum / sliced.length;
-    }
-
-    function robustAggregate(arr, method = "trim", trim = 1) {
-      if (!arr || arr.length === 0) return null;
-      if (method === "median") {
-        const a = [...arr].sort((x, y) => x - y);
-        return medianOfSorted(a);
-      }
-      // default: trimmed mean
-      return trimmedMean(arr, trim);
-    }
-
-    // ✅ อ่านค่า 1 ครั้ง (ROI 12x12)
     function readOneSample() {
       if (video.readyState !== video.HAVE_ENOUGH_DATA) return null;
 
       procCtx.drawImage(video, 0, 0, 50, 50);
-
-      const x0 = ROI_CENTER.x - ROI_HALF;
-      const y0 = ROI_CENTER.y - ROI_HALF;
-
-      const frame = procCtx.getImageData(x0, y0, ROI_SIZE, ROI_SIZE);
+      const frame = procCtx.getImageData(23, 23, 4, 4);
       const data = frame.data;
 
       let r = 0, g = 0, b = 0, c = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        r += data[i]; g += data[i + 1]; b += data[i + 2]; c++;
-      }
+      for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; c++; }
       r = Math.round(r / c); g = Math.round(g / c); b = Math.round(b / c);
 
       const rgb = `rgb(${r},${g},${b})`;
@@ -1044,56 +1174,28 @@
       liveRGB = rgb;
       liveLab = lab;
 
-      return { rgb, lab, r, g, b };
+      return { rgb, lab };
     }
 
-    /**
-     * ✅ Temporal Averaging + Robust Filter
-     * - ROI: 12x12
-     * - method: "trim" (trimmed mean) หรือ "median"
-     *
-     * 추천: samples=9, gap=45, settle=160, method="trim", trim=1
-     */
-    async function captureAveraged(samples = 9, gapMs = 45, settleMs = 160, method = "trim", trim = 1) {
+    async function captureNoFlash(settleMs = 120) {
       if (isTorchBusy) return null;
       await wait(settleMs);
-
-      const Rs = [], Gs = [], Bs = [];
-
-      for (let i = 0; i < samples; i++) {
-        const s = readOneSample();
-        if (s) {
-          Rs.push(s.r);
-          Gs.push(s.g);
-          Bs.push(s.b);
-        }
-        await wait(gapMs);
-      }
-
-      if (Rs.length === 0) return null;
-
-      // ✅ robust aggregate
-      const r = Math.round(robustAggregate(Rs, method, trim));
-      const g = Math.round(robustAggregate(Gs, method, trim));
-      const b = Math.round(robustAggregate(Bs, method, trim));
-
-      const rgb = `rgb(${r},${g},${b})`;
-      const lab = rgbToLab(r, g, b);
-
-      liveRGB = rgb;
-      liveLab = lab;
-
-      return { rgb, lab, r, g, b };
+      return readOneSample();
     }
 
     async function lockRef() {
-      // ✅ แม่นสุด + trimmed mean
-      const sample = await captureAveraged(9, 45, 160, "trim", 1);
-      // ถ้าอยากใช้ median: captureAveraged(9,45,160,"median")
+      // iOS: ask permission so ANGLE can move
+      await requestOrientationPermissionIfNeeded();
+
+      const sample = await captureNoFlash();
       if (!sample) return;
 
       savedRefLab = { ...sample.lab };
       updateCard("ref", savedRefLab, sample.rgb);
+
+      // save reference metrics for guidance
+      const m = readLiveQuality();
+      if (m) refMetrics = { ...m };
 
       document.getElementById("card-ref").classList.add("active-ref");
       document.getElementById("btn-lock-ref").innerHTML = '<i data-lucide="check"></i> SAVED';
@@ -1104,8 +1206,7 @@
     }
 
     async function lockSam() {
-      // ✅ แม่นสุด + trimmed mean
-      const sample = await captureAveraged(9, 45, 160, "trim", 1);
+      const sample = await captureNoFlash();
       if (!sample) return;
 
       savedSamLab = { ...sample.lab };
@@ -1115,6 +1216,7 @@
 
       flashTarget();
       tryCalculate();
+      lucide.createIcons();
     }
 
     function flashTarget() {
@@ -1156,6 +1258,7 @@
           dash.classList.add("status-diff");
           document.getElementById("delta-msg").innerText = "DIFF";
         }
+
         generateAdvice(savedRefLab, savedSamLab);
       }
     }
@@ -1195,11 +1298,14 @@
         `;
         container.appendChild(div);
       });
+
       lucide.createIcons();
     }
 
     function resetAll() {
       savedRefLab = null; savedSamLab = null;
+      refMetrics = null; liveMetrics = null;
+
       ["ref", "sam"].forEach((type) => {
         document.getElementById(`card-${type}`).classList.remove("active-ref", "active-sam");
         document.getElementById(`preview-${type}`).style.background = "#334155";
@@ -1218,6 +1324,8 @@
 
       document.getElementById("advice-content").innerHTML = "";
       document.getElementById("advice-placeholder").style.display = "flex";
+
+      showGuidance(false);
       lucide.createIcons();
     }
 
@@ -1283,6 +1391,7 @@
     function calculateDeltaE76(l1, l2) {
       return Math.sqrt(Math.pow(l2.L - l1.L, 2) + Math.pow(l2.a - l1.a, 2) + Math.pow(l2.b - l1.b, 2));
     }
+
     function calculateDeltaE94(l1, l2) {
       const L1 = parseFloat(l1.L), a1 = parseFloat(l1.a), b1 = parseFloat(l1.b);
       const L2 = parseFloat(l2.L), a2 = parseFloat(l2.a), b2 = parseFloat(l2.b);
@@ -1292,6 +1401,7 @@
       const SC = 1 + 0.045 * C1, SH = 1 + 0.015 * C1;
       return Math.sqrt(Math.pow(dL, 2) + Math.pow(dC / SC, 2) + Math.pow(dH / SH, 2));
     }
+
     function calculateDeltaE2000(l1, l2) {
       const L1 = parseFloat(l1.L), a1 = parseFloat(l1.a), b1 = parseFloat(l1.b);
       const L2 = parseFloat(l2.L), a2 = parseFloat(l2.a), b2 = parseFloat(l2.b);
@@ -1337,7 +1447,7 @@
       );
     }
 
-    /* ✅ เรียก Auto-fit ตั้งแต่เริ่ม + ตอนหมุนจอ/เปลี่ยนขนาด */
+    // Auto-fit init
     applyAutoFitLayout();
     window.addEventListener("resize", applyAutoFitLayout);
 
@@ -1346,10 +1456,10 @@
       new ResizeObserver(() => applyAutoFitLayout()).observe(frameEl);
     }
 
-    // ✅ ปิดไฟค้างเมื่อสลับแอป/ออกจากหน้า
+    // Torch safety
     document.addEventListener("visibilitychange", async () => {
       if (document.hidden && isTorchOn) {
-        await setTorch(false);
+        if (torchSupported) await setTorch(false);
         document.body.classList.remove("screen-lamp");
         isTorchOn = false;
         updateTorchUI();
@@ -1357,7 +1467,7 @@
     });
 
     window.addEventListener("beforeunload", async () => {
-      await setTorch(false);
+      if (torchSupported) await setTorch(false);
     });
 
     initCamera();
