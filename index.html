@@ -534,37 +534,34 @@
     #proc-canvas { display: none; }
 
     /* =======================================================
-       ✅ Visual Guidance HUD (Rings) — SMALL + TOP-LEFT
+       ✅ Visual Guidance HUD (ANGLE + GLARE only) — SMALL + BOTTOM-LEFT
        ======================================================= */
-.guidance-hud{
-  position:absolute;
+    .guidance-hud{
+      position:absolute;
+      top: auto;
+      right: auto;
+      left: calc(10px + env(safe-area-inset-left));
+      bottom: calc(10px + env(safe-area-inset-bottom));
 
-  /* ✅ ย้ายจากมุมบนซ้าย -> มุมล่างซ้าย */
-  top: auto;
-  right: auto;
-  left: calc(10px + env(safe-area-inset-left));
-  bottom: calc(10px + env(safe-area-inset-bottom));
+      z-index: 25;
+      pointer-events: none;
 
-  z-index: 25;
-  pointer-events: none;
+      display:flex;
+      justify-content: flex-start;
+      gap: 8px;
+      flex-wrap: nowrap;
+      align-items: center;
 
-  display:flex;
-  justify-content: flex-start;
-  gap: 8px;
-  flex-wrap: nowrap;
-  align-items: center;
+      padding: 6px 8px;
+      border-radius: 14px;
+      background: rgba(2,6,23,.28);
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.18);
 
-  padding: 6px 8px;
-  border-radius: 14px;
-  background: rgba(2,6,23,.28);
-  border: 1px solid rgba(255,255,255,.12);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 10px 30px rgba(0,0,0,.18);
-
-  width: fit-content;
-  max-width: calc(100% - 20px);
-}
-
+      width: fit-content;
+      max-width: calc(100% - 20px);
+    }
 
     .guidance-hud.hidden{
       opacity: 0;
@@ -664,14 +661,8 @@
       <div class="vp-camera">
         <video id="webcam" autoplay playsinline muted></video>
 
-        <!-- ✅ Small guidance HUD at top-left -->
+        <!-- ✅ Guidance HUD (NO DISTANCE) -->
         <div id="guidanceHud" class="guidance-hud hidden" aria-label="Capture guidance">
-          <div class="gauge" id="gDistGauge" title="Distance / Focus">
-            <div class="g-circle" id="gDistCircle">
-              <i data-lucide="ruler"></i>
-            </div>
-            <div class="g-lbl">DIST</div>
-          </div>
 
           <div class="gauge" id="gAngleGauge" title="Angle / Tilt">
             <div class="g-circle" id="gAngleCircle">
@@ -733,8 +724,10 @@
               <div class="l-item"><div class="l-lbl">a</div><div class="l-val" id="ref-a">-</div></div>
               <div class="l-item"><div class="l-lbl">b</div><div class="l-val" id="ref-b">-</div></div>
             </div>
+
+            <!-- ✅ Always show CAPTURE -->
             <button class="btn-act" id="btn-lock-ref" onclick="lockRef()">
-              <i data-lucide="fingerprint" style="width: 16px;"></i> LOCK REF
+              <i data-lucide="fingerprint" style="width: 16px;"></i> CAPTURE
             </button>
           </div>
 
@@ -748,8 +741,10 @@
               <div class="l-item"><div class="l-lbl">a</div><div class="l-val" id="sam-a">-</div></div>
               <div class="l-item"><div class="l-lbl">b</div><div class="l-val" id="sam-b">-</div></div>
             </div>
+
+            <!-- ✅ Always show CAPTURE -->
             <button class="btn-act" id="btn-lock-sam" onclick="lockSam()">
-              <i data-lucide="scan-line" style="width: 16px;"></i> SCAN
+              <i data-lucide="scan-line" style="width: 16px;"></i> CAPTURE
             </button>
           </div>
         </div>
@@ -810,12 +805,10 @@
     let refMetrics = null;  // { meanLuma, sharpness, overPct, beta, gamma }
     let liveMetrics = null;
 
-    // Guidance HUD Elements
+    // Guidance HUD Elements (NO DISTANCE)
     const guidanceHud = document.getElementById("guidanceHud");
-    const gDistGauge  = document.getElementById("gDistGauge");
     const gAngleGauge = document.getElementById("gAngleGauge");
     const gGlareGauge = document.getElementById("gGlareGauge");
-    const gDistCircle  = document.getElementById("gDistCircle");
     const gAngleCircle = document.getElementById("gAngleCircle");
     const gGlareCircle = document.getElementById("gGlareCircle");
 
@@ -1033,6 +1026,7 @@
       circleEl.style.setProperty("--p", p);
     }
 
+    // ✅ Guidance HUD: ANGLE + GLARE only (NO DISTANCE)
     function updateGuidanceHud(ref, cur) {
       if (!ref || !cur) { showGuidance(false); return; }
       showGuidance(true);
@@ -1047,28 +1041,12 @@
       }
       const angleScore = (tiltDiff == null) ? null : (1 - clamp01(tiltDiff / 18));
 
-      // DIST score (sharpness + luma proxy)
-      let distScore = 0.65;
-      if ((ref.sharpness ?? 0) > 0 && (cur.sharpness ?? 0) > 0) {
-        const ratio = cur.sharpness / ref.sharpness; // ~1 best
-        const logErr = Math.abs(Math.log(ratio));
-        const LOG_MAX = Math.log(1.8);
-        const sharpScore = 1 - clamp01(logErr / LOG_MAX);
-
-        const lumaDiff = Math.abs((cur.meanLuma ?? 0) - (ref.meanLuma ?? 0));
-        const LUMA_MAX = 18;
-        const lumaScore = 1 - clamp01(lumaDiff / LUMA_MAX);
-
-        distScore = 0.65 * sharpScore + 0.35 * lumaScore;
-      }
-
       // GLARE score
       const GLARE_MAX = 0.10;
       const glareScore = 1 - clamp01((cur.overPct ?? 0) / GLARE_MAX);
 
       const stateFrom = (s) => (s > 0.90 ? "g-good" : (s > 0.78 ? "g-mid" : "g-bad"));
 
-      setGaugeState(gDistGauge,  gDistCircle,  distScore,  stateFrom(distScore));
       setGaugeState(gGlareGauge, gGlareCircle, glareScore, stateFrom(glareScore));
 
       if (angleScore == null) {
@@ -1203,8 +1181,8 @@
       if (m) refMetrics = { ...m };
 
       document.getElementById("card-ref").classList.add("active-ref");
-      document.getElementById("btn-lock-ref").innerHTML = '<i data-lucide="check"></i> SAVED';
 
+      // ✅ Button label always CAPTURE (no SAVED/CAPTURED text)
       flashTarget();
       tryCalculate();
       lucide.createIcons();
@@ -1219,6 +1197,7 @@
 
       document.getElementById("card-sam").classList.add("active-sam");
 
+      // ✅ Button label always CAPTURE (no SAVED/CAPTURED text)
       flashTarget();
       tryCalculate();
       lucide.createIcons();
@@ -1320,8 +1299,11 @@
         document.getElementById(`marker-${type}`).classList.remove("visible");
       });
 
+      // ✅ Always CAPTURE (never SAVED/CAPTURED)
       document.getElementById("btn-lock-ref").innerHTML =
-        '<i data-lucide="fingerprint" style="width:16px;"></i> LOCK REF';
+        '<i data-lucide="fingerprint" style="width:16px;"></i> CAPTURE';
+      document.getElementById("btn-lock-sam").innerHTML =
+        '<i data-lucide="scan-line" style="width:16px;"></i> CAPTURE';
 
       document.getElementById("delta-val").innerText = "--";
       document.getElementById("result-dashboard").className = "result-dashboard";
