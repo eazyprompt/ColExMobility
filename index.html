@@ -45,7 +45,7 @@
       --font-ui: "Inter", sans-serif;
       --font-num: "JetBrains Mono", monospace;
 
-      /* ✅ ปรับตามขนาดจออัตโนมัติ (ไม่ hardcode รุ่นมือถือ) */
+      /* ✅ ปรับตามขนาดจออัตโนมัติ */
       --frame-gap: clamp(18px, 6.5vw, 72px);
 
       /* ✅ ค่าเริ่มต้น (JS จะ auto-fit ให้เอง) */
@@ -53,7 +53,7 @@
       --viewport-h: 220px;
       --viz-h: 150px;
 
-      /* ✅ FIX: ใช้ความสูงจริงของมือถือ (JS จะ set เป็น px) */
+      /* ✅ ใช้ความสูงจริงของมือถือ (JS จะ set เป็น px) */
       --app-h: 100dvh;
     }
 
@@ -63,6 +63,7 @@
       outline: none;
     }
 
+    /* ✅ FIX: กันล้นจอโดยให้ body เป็นตัวเว้นขอบ + app-frame สูง 100% */
     body {
       background: #020617;
       color: var(--text-main);
@@ -70,16 +71,18 @@
       margin: 0;
 
       width: 100vw;
+      min-height: 100svh;
       height: var(--app-h);
 
       display: flex;
       align-items: center;
       justify-content: center;
 
+      padding: var(--frame-gap);
       overflow: hidden;
     }
 
-    /* ✅ Screen flash fallback (สำหรับ iOS/เครื่องที่ไม่รองรับ torch) */
+    /* ✅ Screen flash fallback */
     body::after{
       content:"";
       position: fixed;
@@ -97,11 +100,9 @@
 
     /* --- App Frame Wrapper --- */
     .app-frame {
-      width: calc(100vw - (var(--frame-gap) * 2));
-      height: calc(var(--app-h) - (var(--frame-gap) * 2));
-
-      max-width: 500px;
-      max-height: calc(var(--app-h) - (var(--frame-gap) * 2));
+      width: min(500px, 100%);
+      height: 100%;
+      max-height: 100%;
 
       background: var(--bg-body);
       display: flex;
@@ -112,7 +113,6 @@
       border-radius: 24px;
       box-shadow: 0 0 50px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-subtle);
 
-      /* ✅ กันชน notch / home bar */
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
     }
@@ -178,21 +178,9 @@
       justify-content: center;
       cursor: pointer;
       transition: 0.2s;
-    }
-
-    /* ✅ NEW: ขวาของ dashboard (badge + reset) */
-    .dash-right{
-      display:flex;
-      align-items:center;
-      gap:10px;
       flex-shrink: 0;
     }
-
-    /* ✅ NEW: ปรับปุ่ม icon ให้เข้ากับ dashboard */
-    .btn-icon-dash{
-      width: 38px;
-      height: 38px;
-    }
+    .btn-icon-header:active { transform: scale(0.96); }
 
     /* --- Viewport (Auto-fit) --- */
     .viewport {
@@ -329,13 +317,12 @@
       to { opacity: 1; transform: translateX(0); }
     }
 
-    /* --- Panel (ไม่ให้ scroll) --- */
+    /* --- Panel --- */
     .panel {
       flex: 1;
       background: var(--bg-body);
       display: flex;
       flex-direction: column;
-
       overflow: hidden;
       padding-top: var(--gap-layout);
       padding-bottom: var(--gap-layout);
@@ -347,11 +334,9 @@
       display: flex;
       flex-direction: column;
       gap: var(--gap-layout);
-
       margin: 0 auto;
       width: 100%;
       height: 100%;
-
       overflow: hidden;
       min-height: 0;
     }
@@ -394,6 +379,13 @@
       color: #fff;
       letter-spacing: 0.5px;
       border: 1px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
+    }
+
+    .dash-right{
+      display:flex;
+      align-items:center;
+      gap:10px;
       flex-shrink: 0;
     }
 
@@ -616,19 +608,16 @@
     <header>
       <div class="brand"><i data-lucide="scan-face"></i> ColEx <span>Mobility</span></div>
       <div class="header-controls">
-        <!-- ✅ Dropdown อยู่ที่เดิม -->
         <select id="algo-select" class="algo-selector" onchange="changeMode(this.value)">
           <option value="2000">DE 2000</option>
           <option value="94">DE 94</option>
           <option value="76">DE 76</option>
         </select>
 
-        <!-- ✅ Torch hold button -->
+        <!-- Torch hold -->
         <button class="btn-icon-header" id="btn-torch" onclick="toggleTorchHold()" title="Torch">
           <i data-lucide="flashlight" style="width: 18px;"></i>
         </button>
-
-        <!-- ✅ Reset ถูกย้ายไปอยู่ใน Result Dashboard แล้ว -->
       </div>
     </header>
 
@@ -660,10 +649,9 @@
             <div class="res-value" id="delta-val">--</div>
           </div>
 
-          <!-- ✅ Reset อยู่ใน Dashboard -->
           <div class="dash-right">
             <div class="res-badge" id="delta-msg">READY</div>
-            <button class="btn-icon-header btn-icon-dash" onclick="resetAll()" title="Reset">
+            <button class="btn-icon-header" onclick="resetAll()" title="Reset">
               <i data-lucide="rotate-cw" style="width: 18px;"></i>
             </button>
           </div>
@@ -744,11 +732,19 @@
     let bgImageData = null;
     let deltaMode = "2000";
 
-    // ✅ Torch
+    // ✅ Torch / Flash
     let videoTrack = null;
     let torchSupported = false;
     let isTorchBusy = false;
     let isTorchOn = false;
+
+    // ✅ Android fallback: ImageCapture
+    let imageCapture = null;
+
+    // ✅ ROI settings (4x4 -> 12x12)
+    const ROI_SIZE = 12; // ✅ เปลี่ยนเป็น 12
+    const ROI_CENTER = { x: 25, y: 25 }; // กลางของ 50x50
+    const ROI_HALF = Math.floor(ROI_SIZE / 2);
 
     // ✅ FIX: ความสูงจริงของ viewport บนมือถือ
     function setRealAppHeight() {
@@ -771,14 +767,25 @@
         });
         video.srcObject = stream;
 
-        // ✅ เก็บ track + เช็ค torch
         videoTrack = stream.getVideoTracks?.()[0] || null;
+
+        // ✅ ImageCapture fallback
+        try {
+          if ("ImageCapture" in window && videoTrack) {
+            imageCapture = new ImageCapture(videoTrack);
+          }
+        } catch (e) {
+          imageCapture = null;
+        }
+
+        // ✅ torch support check
         try {
           const caps = videoTrack?.getCapabilities?.();
           torchSupported = !!caps?.torch;
         } catch (e) {
           torchSupported = false;
         }
+        if (!torchSupported && imageCapture) torchSupported = true;
 
         updateTorchUI();
 
@@ -887,12 +894,20 @@
 
     function loop() {
       if (!isProcessing) return;
+
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
         procCtx.drawImage(video, 0, 0, 50, 50);
-        const frame = procCtx.getImageData(23, 23, 4, 4);
+
+        // realtime preview: ใช้ ROI 12x12
+        const x0 = ROI_CENTER.x - ROI_HALF;
+        const y0 = ROI_CENTER.y - ROI_HALF;
+        const frame = procCtx.getImageData(x0, y0, ROI_SIZE, ROI_SIZE);
         const data = frame.data;
+
         let r = 0, g = 0, b = 0, c = 0;
-        for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; c++; }
+        for (let i = 0; i < data.length; i += 4) {
+          r += data[i]; g += data[i + 1]; b += data[i + 2]; c++;
+        }
         r = Math.round(r / c); g = Math.round(g / c); b = Math.round(b / c);
 
         liveRGB = `rgb(${r},${g},${b})`;
@@ -904,14 +919,29 @@
 
     function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
+    // ✅ Torch open: applyConstraints -> ImageCapture.setOptions -> false
     async function setTorch(on) {
-      if (!videoTrack || !torchSupported || !videoTrack.applyConstraints) return false;
+      if (!videoTrack) return false;
+
+      // 1) applyConstraints
       try {
-        await videoTrack.applyConstraints({ advanced: [{ torch: !!on }] });
-        return true;
-      } catch (e) {
-        return false;
-      }
+        const caps = videoTrack.getCapabilities?.();
+        const canTorch = !!caps?.torch;
+        if (canTorch && videoTrack.applyConstraints) {
+          await videoTrack.applyConstraints({ advanced: [{ torch: !!on }] });
+          return true;
+        }
+      } catch (e) {}
+
+      // 2) ImageCapture fallback
+      try {
+        if (imageCapture?.setOptions) {
+          await imageCapture.setOptions({ torch: !!on });
+          return true;
+        }
+      } catch (e) {}
+
+      return false;
     }
 
     function updateTorchUI() {
@@ -935,8 +965,10 @@
       const next = !isTorchOn;
 
       try {
-        if (torchSupported && videoTrack?.applyConstraints) {
+        if (torchSupported) {
           const ok = await setTorch(next);
+
+          // fallback to screen lamp
           if (!ok && next) {
             document.body.classList.add("screen-lamp");
             isTorchOn = true;
@@ -950,6 +982,7 @@
           return;
         }
 
+        // not supported: screen lamp
         isTorchOn = next;
         document.body.classList.toggle("screen-lamp", isTorchOn);
         updateTorchUI();
@@ -958,16 +991,51 @@
       }
     }
 
-    // ✅ อ่านค่า 1 ครั้ง (ส่ง r,g,b กลับด้วย เพื่อไปเฉลี่ยหลายเฟรม)
+    // -------- Robust stats helpers (Trimmed mean / Median) --------
+    function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+
+    function medianOfSorted(arrSorted) {
+      const n = arrSorted.length;
+      if (n === 0) return null;
+      const mid = Math.floor(n / 2);
+      return (n % 2 === 1) ? arrSorted[mid] : (arrSorted[mid - 1] + arrSorted[mid]) / 2;
+    }
+
+    function trimmedMean(arr, trim = 1) {
+      if (!arr || arr.length === 0) return null;
+      const a = [...arr].sort((x, y) => x - y);
+      const t = clamp(trim, 0, Math.floor((a.length - 1) / 2));
+      const sliced = a.slice(t, a.length - t);
+      const sum = sliced.reduce((s, v) => s + v, 0);
+      return sum / sliced.length;
+    }
+
+    function robustAggregate(arr, method = "trim", trim = 1) {
+      if (!arr || arr.length === 0) return null;
+      if (method === "median") {
+        const a = [...arr].sort((x, y) => x - y);
+        return medianOfSorted(a);
+      }
+      // default: trimmed mean
+      return trimmedMean(arr, trim);
+    }
+
+    // ✅ อ่านค่า 1 ครั้ง (ROI 12x12)
     function readOneSample() {
       if (video.readyState !== video.HAVE_ENOUGH_DATA) return null;
 
       procCtx.drawImage(video, 0, 0, 50, 50);
-      const frame = procCtx.getImageData(23, 23, 4, 4);
+
+      const x0 = ROI_CENTER.x - ROI_HALF;
+      const y0 = ROI_CENTER.y - ROI_HALF;
+
+      const frame = procCtx.getImageData(x0, y0, ROI_SIZE, ROI_SIZE);
       const data = frame.data;
 
       let r = 0, g = 0, b = 0, c = 0;
-      for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; c++; }
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i]; g += data[i + 1]; b += data[i + 2]; c++;
+      }
       r = Math.round(r / c); g = Math.round(g / c); b = Math.round(b / c);
 
       const rgb = `rgb(${r},${g},${b})`;
@@ -979,27 +1047,35 @@
       return { rgb, lab, r, g, b };
     }
 
-    // ✅ NEW: Temporal Averaging (เฉลี่ยหลายเฟรม)
-    async function captureAveraged(samples = 7, gapMs = 35, settleMs = 120) {
-      if (isTorchBusy) return null; // กันชนตอนกำลังกดเปิด/ปิดไฟ
+    /**
+     * ✅ Temporal Averaging + Robust Filter
+     * - ROI: 12x12
+     * - method: "trim" (trimmed mean) หรือ "median"
+     *
+     * 추천: samples=9, gap=45, settle=160, method="trim", trim=1
+     */
+    async function captureAveraged(samples = 9, gapMs = 45, settleMs = 160, method = "trim", trim = 1) {
+      if (isTorchBusy) return null;
       await wait(settleMs);
 
-      let sumR = 0, sumG = 0, sumB = 0, n = 0;
+      const Rs = [], Gs = [], Bs = [];
 
       for (let i = 0; i < samples; i++) {
         const s = readOneSample();
         if (s) {
-          sumR += s.r; sumG += s.g; sumB += s.b;
-          n++;
+          Rs.push(s.r);
+          Gs.push(s.g);
+          Bs.push(s.b);
         }
         await wait(gapMs);
       }
 
-      if (n === 0) return null;
+      if (Rs.length === 0) return null;
 
-      const r = Math.round(sumR / n);
-      const g = Math.round(sumG / n);
-      const b = Math.round(sumB / n);
+      // ✅ robust aggregate
+      const r = Math.round(robustAggregate(Rs, method, trim));
+      const g = Math.round(robustAggregate(Gs, method, trim));
+      const b = Math.round(robustAggregate(Bs, method, trim));
 
       const rgb = `rgb(${r},${g},${b})`;
       const lab = rgbToLab(r, g, b);
@@ -1010,36 +1086,36 @@
       return { rgb, lab, r, g, b };
     }
 
-   async function lockRef() {
-  // ✅ โหมดแม่นสุด
-  const sample = await captureAveraged(9, 45, 160);
-  if (!sample) return;
+    async function lockRef() {
+      // ✅ แม่นสุด + trimmed mean
+      const sample = await captureAveraged(9, 45, 160, "trim", 1);
+      // ถ้าอยากใช้ median: captureAveraged(9,45,160,"median")
+      if (!sample) return;
 
-  savedRefLab = { ...sample.lab };
-  updateCard("ref", savedRefLab, sample.rgb);
+      savedRefLab = { ...sample.lab };
+      updateCard("ref", savedRefLab, sample.rgb);
 
-  document.getElementById("card-ref").classList.add("active-ref");
-  document.getElementById("btn-lock-ref").innerHTML = '<i data-lucide="check"></i> SAVED';
+      document.getElementById("card-ref").classList.add("active-ref");
+      document.getElementById("btn-lock-ref").innerHTML = '<i data-lucide="check"></i> SAVED';
 
-  flashTarget();
-  tryCalculate();
-  lucide.createIcons();
-}
+      flashTarget();
+      tryCalculate();
+      lucide.createIcons();
+    }
 
-async function lockSam() {
-  // ✅ โหมดแม่นสุด
-  const sample = await captureAveraged(9, 45, 160);
-  if (!sample) return;
+    async function lockSam() {
+      // ✅ แม่นสุด + trimmed mean
+      const sample = await captureAveraged(9, 45, 160, "trim", 1);
+      if (!sample) return;
 
-  savedSamLab = { ...sample.lab };
-  updateCard("sam", savedSamLab, sample.rgb);
+      savedSamLab = { ...sample.lab };
+      updateCard("sam", savedSamLab, sample.rgb);
 
-  document.getElementById("card-sam").classList.add("active-sam");
+      document.getElementById("card-sam").classList.add("active-sam");
 
-  flashTarget();
-  tryCalculate();
-}
-
+      flashTarget();
+      tryCalculate();
+    }
 
     function flashTarget() {
       const tb = document.getElementById("target-box");
@@ -1270,10 +1346,10 @@ async function lockSam() {
       new ResizeObserver(() => applyAutoFitLayout()).observe(frameEl);
     }
 
-    // ✅ Safety: ปิดไฟค้างเมื่อสลับแอป/ออกจากหน้า
+    // ✅ ปิดไฟค้างเมื่อสลับแอป/ออกจากหน้า
     document.addEventListener("visibilitychange", async () => {
       if (document.hidden && isTorchOn) {
-        if (torchSupported) await setTorch(false);
+        await setTorch(false);
         document.body.classList.remove("screen-lamp");
         isTorchOn = false;
         updateTorchUI();
@@ -1281,7 +1357,7 @@ async function lockSam() {
     });
 
     window.addEventListener("beforeunload", async () => {
-      if (torchSupported) await setTorch(false);
+      await setTorch(false);
     });
 
     initCamera();
